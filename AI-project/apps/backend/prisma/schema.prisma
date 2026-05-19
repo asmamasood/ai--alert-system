@@ -1,0 +1,454 @@
+// ============================================================
+// ResQ AI — Prisma Database Schema
+// Target: PostgreSQL | ORM: Prisma
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────
+
+enum UserRole {
+  CITIZEN
+  RESPONDER
+  ADMIN
+  SUPER_ADMIN
+  DRONE_OPERATOR
+  ANALYST
+}
+
+enum DisasterType {
+  FLOOD
+  EARTHQUAKE
+  HEATWAVE
+  FIRE
+  BUILDING_COLLAPSE
+  ROAD_ACCIDENT
+  MEDICAL_EMERGENCY
+  GAS_LEAK
+  INFRASTRUCTURE_FAILURE
+  TRAFFIC_BLOCKAGE
+  ELECTRICAL_FAILURE
+  WATER_SYSTEM_BREAKDOWN
+  UNKNOWN
+}
+
+enum SeverityLevel {
+  LOW
+  MODERATE
+  HIGH
+  CRITICAL
+  CATASTROPHIC
+}
+
+enum IncidentStatus {
+  PENDING
+  DETECTED
+  ANALYZING
+  ACTIVE
+  RESPONDING
+  CONTAINED
+  RESOLVED
+  CLOSED
+}
+
+enum VehicleType {
+  AMBULANCE
+  FIRE_TRUCK
+  POLICE
+  RESCUE_BOAT
+  HELICOPTER
+  DRONE
+  UTILITY_TRUCK
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  DISPATCHED
+  ON_SCENE
+  RETURNING
+  MAINTENANCE
+}
+
+enum AlertLevel {
+  INFO
+  WARNING
+  CRITICAL
+  EMERGENCY
+}
+
+enum AgentStatus {
+  IDLE
+  RUNNING
+  COMPLETED
+  FAILED
+  WAITING
+}
+
+// ─── MODELS ──────────────────────────────────────────────────
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  phone             String?   @unique
+  passwordHash      String
+  name              String
+  role              UserRole  @default(CITIZEN)
+  isVerified        Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  avatar            String?
+  nationalId        String?
+  fcmToken          String?
+  biometricEnabled  Boolean   @default(false)
+  preferredLanguage String    @default("en")
+  
+  // Location
+  latitude          Float?
+  longitude         Float?
+  district          String?
+  address           String?
+  
+  // Emergency contacts
+  emergencyContacts Json?     // Array of {name, phone, relation}
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastLoginAt       DateTime?
+  
+  // Relations
+  reports           EmergencyReport[]
+  chatMessages      ChatMessage[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  
+  @@map("users")
+}
+
+model EmergencyReport {
+  id                String         @id @default(cuid())
+  reportNumber      String         @unique @default(cuid())
+  
+  // Core info
+  type              DisasterType
+  severity          SeverityLevel  @default(LOW)
+  status            IncidentStatus @default(PENDING)
+  title             String
+  description       String
+  
+  // Location
+  latitude          Float
+  longitude         Float
+  address           String?
+  district          String?
+  
+  // AI Analysis
+  aiConfidence      Float?         // 0-100
+  aiReasoning       String?
+  aiRecommendations Json?          // Array of recommendations
+  aiAnalysisId      String?
+  
+  // Media
+  mediaUrls         Json?          // Array of URLs
+  
+  // Reporter
+  reporterId        String
+  reporter          User           @relation(fields: [reporterId], references: [id])
+  isAnonymous       Boolean        @default(false)
+  
+  // Response
+  assignedTeams     Json?          // Array of team IDs
+  responseTime      Int?           // minutes
+  resolvedAt        DateTime?
+  
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  // Relations
+  aiAnalysis        AIAnalysis?
+  alerts            Alert[]
+  media             IncidentMedia[]
+  
+  @@map("emergency_reports")
+}
+
+model AIAnalysis {
+  id                String        @id @default(cuid())
+  reportId          String        @unique
+  report            EmergencyReport @relation(fields: [reportId], references: [id])
+  
+  // Analysis results
+  detectedType      DisasterType
+  confidence        Float
+  severityScore     Float         // 0-100
+  
+  // Reasoning chain
+  reasoning         Json          // Array of reasoning steps
+  recommendations   Json          // Array of action items
+  
+  // Predictions
+  spreadPrediction  Json?         // Geographic spread data
+  impactEstimate    Json?         // {affected_people, area_km2, duration_hours}
+  
+  // Agent workflow
+  agentWorkflow     Json?         // Array of agent execution steps
+  
+  // Timestamps
+  processedAt       DateTime      @default(now())
+  processingTime    Int?          // milliseconds
+  modelUsed         String        @default("gemini-1.5-pro")
+  
+  @@map("ai_analyses")
+}
+
+model RescueTeam {
+  id                String        @id @default(cuid())
+  teamCode          String        @unique
+  name              String
+  type              String        // MEDICAL, FIRE, SEARCH_RESCUE, POLICE
+  
+  // Status
+  isAvailable       Boolean       @default(true)
+  currentLat        Float?
+  currentLng        Float?
+  district          String
+  
+  // Team details
+  memberCount       Int           @default(0)
+  contactNumber     String
+  fcmToken          String?
+  
+  // Vehicles assigned
+  vehicles          EmergencyVehicle[]
+  
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@map("rescue_teams")
+}
+
+model EmergencyVehicle {
+  id                String        @id @default(cuid())
+  vehicleNumber     String        @unique
+  type              VehicleType
+  status            VehicleStatus @default(AVAILABLE)
+  
+  // Location
+  currentLat        Float?
+  currentLng        Float?
+  
+  // Assignment
+  teamId            String?
+  team              RescueTeam?   @relation(fields: [teamId], references: [id])
+  currentMissionId  String?
+  
+  // Specs
+  capacity          Int?
+  fuelLevel         Float?        // 0-100
+  
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@map("emergency_vehicles")
+}
+
+model Alert {
+  id                String        @id @default(cuid())
+  
+  // Core
+  level             AlertLevel
+  title             String
+  message           String
+  messageUrdu       String?
+  
+  // Targeting
+  district          String?       // null = city-wide
+  latitude          Float?
+  longitude         Float?
+  radiusKm          Float?
+  
+  // Source
+  reportId          String?
+  report            EmergencyReport? @relation(fields: [reportId], references: [id])
+  isAiGenerated     Boolean       @default(false)
+  
+  // Status
+  isActive          Boolean       @default(true)
+  expiresAt         DateTime?
+  
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  notifications     Notification[]
+  
+  @@map("alerts")
+}
+
+model Notification {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id])
+  alertId           String?
+  alert             Alert?        @relation(fields: [alertId], references: [id])
+  
+  title             String
+  body              String
+  data              Json?
+  isRead            Boolean       @default(false)
+  
+  createdAt         DateTime      @default(now())
+  
+  @@map("notifications")
+}
+
+model IncidentMedia {
+  id                String        @id @default(cuid())
+  reportId          String
+  report            EmergencyReport @relation(fields: [reportId], references: [id])
+  
+  url               String
+  type              String        // IMAGE, VIDEO, AUDIO
+  size              Int?          // bytes
+  aiDescription     String?       // AI-generated description
+  
+  createdAt         DateTime      @default(now())
+  
+  @@map("incident_media")
+}
+
+model ChatMessage {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id])
+  
+  role              String        // user | assistant
+  content           String
+  language          String        @default("en")
+  
+  // AI metadata
+  tokens            Int?
+  modelUsed         String?
+  
+  createdAt         DateTime      @default(now())
+  
+  @@map("chat_messages")
+}
+
+model Location {
+  id                String        @id @default(cuid())
+  name              String
+  district          String
+  latitude          Float
+  longitude         Float
+  
+  // Status
+  isFloodZone       Boolean       @default(false)
+  isHeatwaveZone    Boolean       @default(false)
+  riskLevel         SeverityLevel @default(LOW)
+  
+  // Infrastructure
+  hasShelter        Boolean       @default(false)
+  shelterCapacity   Int?
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@map("locations")
+}
+
+model Simulation {
+  id                String        @id @default(cuid())
+  name              String
+  type              DisasterType
+  
+  // Config
+  parameters        Json          // Simulation parameters
+  
+  // Results
+  results           Json?         // Simulation output
+  livesSaved        Int?
+  responseTimeMin   Int?
+  coveragePercent   Float?
+  
+  // Status
+  status            String        @default("PENDING")
+  progress          Float         @default(0)
+  
+  createdAt         DateTime      @default(now())
+  completedAt       DateTime?
+  
+  @@map("simulations")
+}
+
+model InfrastructureEvent {
+  id                String        @id @default(cuid())
+  
+  type              String        // BRIDGE, ELECTRICITY, WATER, TRAFFIC, SENSOR
+  name              String
+  status            String        // NORMAL, WARNING, CRITICAL, OFFLINE
+  
+  latitude          Float
+  longitude         Float
+  district          String
+  
+  healthScore       Float         @default(100) // 0-100
+  lastReading       Json?
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@map("infrastructure_events")
+}
+
+model AgentExecution {
+  id                String        @id @default(cuid())
+  agentName         String
+  agentType         String
+  status            AgentStatus   @default(IDLE)
+  
+  // Input/Output
+  input             Json?
+  output            Json?
+  logs              Json?         // Array of log entries
+  
+  // Performance
+  startedAt         DateTime?
+  completedAt       DateTime?
+  durationMs        Int?
+  
+  // Relation
+  reportId          String?
+  
+  createdAt         DateTime      @default(now())
+  
+  @@map("agent_executions")
+}
+
+model AuditLog {
+  id                String        @id @default(cuid())
+  userId            String?
+  user              User?         @relation(fields: [userId], references: [id])
+  
+  action            String
+  resource          String
+  resourceId        String?
+  oldValue          Json?
+  newValue          Json?
+  ipAddress         String?
+  userAgent         String?
+  
+  createdAt         DateTime      @default(now())
+  
+  @@map("audit_logs")
+}

@@ -1,0 +1,11 @@
+import React from 'react';
+import { registerRootComponent } from 'expo';
+import { ExpoRoot } from 'expo-router';
+
+export default function App() {
+  // @ts-ignore
+  const ctx = require.context('./app');
+  return React.createElement(ExpoRoot, { context: ctx });
+}
+
+registerRootComponent(App);

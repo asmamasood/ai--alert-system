@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "VIGIL AI",
+    "slug": "vigil-ai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
+    "scheme": "vigil",
+    "backgroundColor": "#050A14",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#050A14"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vigilai.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "VIGIL AI needs camera access to capture emergency photos and videos.",
+        "NSPhotoLibraryUsageDescription": "VIGIL AI needs photo library access to attach media to reports.",
+        "NSLocationWhenInUseUsageDescription": "VIGIL AI needs your location to pin emergency reports accurately.",
+        "NSMicrophoneUsageDescription": "VIGIL AI needs microphone access for voice emergency input."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#050A14"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "RECORD_AUDIO"
+      ],
+      "package": "com.vigilai.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-camera",
+      "expo-location",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "VIGIL AI needs access to your photos to attach them to emergency reports.",
+          "cameraPermission": "VIGIL AI needs camera access to capture emergency evidence."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
