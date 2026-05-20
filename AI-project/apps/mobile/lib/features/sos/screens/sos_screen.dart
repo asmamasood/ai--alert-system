@@ -513,24 +513,36 @@ class _EmergencyProcessingSheet extends ConsumerWidget {
 // Helper for rounded rectangle with advanced control
 class RoundedRectangleAdvanced extends OutlinedBorder {
   final BorderRadius borderRadius;
-  const RoundedRectangleAdvanced({required this.borderRadius});
+  const RoundedRectangleAdvanced({required this.borderRadius, super.side});
+
   @override
   OutlinedBorder copyWith({BorderSide? side, BorderRadiusGeometry? borderRadius}) {
-    return RoundedRectangleAdvanced(borderRadius: borderRadius as BorderRadius);
+    return RoundedRectangleAdvanced(
+      borderRadius: (borderRadius is BorderRadius ? borderRadius : null) ?? this.borderRadius,
+      side: side ?? this.side,
+    );
   }
+
   @override
   Path getInnerPath(Rect rect, {TextDirection? textDirection}) {
     return Path()..addRRect(borderRadius.toRRect(rect).deflate(side.width));
   }
+
   @override
   Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
     return Path()..addRRect(borderRadius.toRRect(rect));
   }
+
   @override
-  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {}
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
+    if (side.style == BorderStyle.none) return;
+    final paint = side.toPaint();
+    canvas.drawRRect(borderRadius.toRRect(rect).deflate(side.width / 2), paint);
+  }
+
   @override
   ShapeBorder scale(double t) {
-    return RoundedRectangleAdvanced(borderRadius: borderRadius * t);
+    return RoundedRectangleAdvanced(borderRadius: borderRadius * t, side: side.scale(t));
   }
 }
 

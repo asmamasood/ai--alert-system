@@ -14982,3 +14982,12 @@ Please retry in 5.657925555s. [{"@type":"type.googleapis.com/google.rpc.Help","l
     at Module._extensions..js (node:internal/modules/cjs/loader:1416:10)
     at require.extensions..jsx.require.extensions..js (C:\Users\LAPTOO~1\AppData\Local\Temp\ts-node-dev-hook-5509685434625393.js:114:20)
     at require.extensions.<computed> (C:\Users\LAPTOO~1\AppData\Local\Temp\ts-node-dev-hook-5509685434625393.js:71:20)
+2026-05-19 23:15:29 [error]: Error: UNKNOWN: unknown error, open 'C:\Users\LAPTOOL TECHNOLOGY\Desktop\mobile-app\AI-project\apps\backend\data-store\store.json'
+    at Object.writeFileSync (node:fs:2346:20)
+    at saveStore (C:\Users\LAPTOOL TECHNOLOGY\Desktop\mobile-app\AI-project\apps\backend\src\utils\persistence.ts:13:8)
+    at SimpleStore.persist (C:\Users\LAPTOOL TECHNOLOGY\Desktop\mobile-app\AI-project\apps\backend\src\data\simpleStore.ts:29:14)
+    at SimpleStore.addAgentLog (C:\Users\LAPTOOL TECHNOLOGY\Desktop\mobile-app\AI-project\apps\backend\src\data\simpleStore.ts:114:10)
+    at agentLog (C:\Users\LAPTOOL TECHNOLOGY\Desktop\mobile-app\AI-project\apps\backend\src\services\aiAnalysis.service.ts:45:11)
+    at analyzeEmergency (C:\Users\LAPTOOL TECHNOLOGY\Desktop\mobile-app\AI-project\apps\backend\src\services\aiAnalysis.service.ts:77:13)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at processTimers (node:internal/timers:511:9)

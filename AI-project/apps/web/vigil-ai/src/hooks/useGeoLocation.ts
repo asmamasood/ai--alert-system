@@ -6,6 +6,7 @@ import * as Location from 'expo-location';
 export const useGeoLocation = (watch = false) => {
   const [location, setLocation] = useState<GeoPoint | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const watchSub = useRef<Location.LocationSubscription | null>(null);
 
@@ -22,6 +23,9 @@ export const useGeoLocation = (watch = false) => {
           });
         }
       } catch (err: any) {
+        if (err.message === 'Permission denied') {
+          setPermissionDenied(true);
+        }
         setError(err.message ?? 'Location error');
         setLocation(locationService.fallbackManualPin());
       } finally {
@@ -40,5 +44,5 @@ export const useGeoLocation = (watch = false) => {
     ? locationService.accuracyScore(location.accuracy)
     : 0;
 
-  return { location, error, isLoading, accuracyScore };
+  return { location, error, permissionDenied, isLoading, accuracyScore };
 };

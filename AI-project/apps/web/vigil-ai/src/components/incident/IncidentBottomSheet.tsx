@@ -7,6 +7,8 @@ import { useSharedValue, withSpring, withTiming, withRepeat, withSequence, Easin
 import { AnimatedView, useAnimatedStyle as useSafeAnimatedStyle } from '../../utils/reanimatedHelpers';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { useMapStore } from '../../store/useMapStore';
 import { Incident } from '../../types/incident.types';
 import { DESIGN_TOKENS, SEVERITY_STYLE } from '../../constants/mapThemes';
 import { formatTimestamp } from '../../utils/severity';
@@ -20,6 +22,7 @@ interface IncidentBottomSheetProps {
 }
 
 export const IncidentBottomSheet: React.FC<IncidentBottomSheetProps> = ({ incident, onClose }) => {
+  const router = useRouter();
   const translateY = useSharedValue(SHEET_HEIGHT);
   const backdropOpacity = useSharedValue(0);
   const scanLineY = useSharedValue(-90);
@@ -28,6 +31,20 @@ export const IncidentBottomSheet: React.FC<IncidentBottomSheetProps> = ({ incide
   // Intelligent AI Scanning console text simulation
   const [aiLog, setAiLog] = useState('INITIATING RISK ASSESSMENT CORES...');
   const [isScanning, setIsScanning] = useState(true);
+
+  const handleViewOnMap = () => {
+    // Zoom/pan map to this incident's location
+    useMapStore.getState().setCameraPosition(
+      incident.location.latitude,
+      incident.location.longitude,
+      14.5
+    );
+    // Open sheet & highlight marker
+    useMapStore.getState().setSelectedIncident(incident);
+    
+    // Switch to Home tab (the Map Screen)
+    router.replace('/(tabs)/home');
+  };
 
   useEffect(() => {
     // Console spring slide up & focus backdrop dimming
@@ -260,8 +277,8 @@ export const IncidentBottomSheet: React.FC<IncidentBottomSheetProps> = ({ incide
                 </LinearGradient>
               </Pressable>
               
-              <Pressable style={styles.actionShareBtn} onPress={handleClose}>
-                <Text style={styles.actionShareText}>BYPASS NODE</Text>
+              <Pressable style={styles.actionShareBtn} onPress={handleViewOnMap}>
+                <Text style={styles.actionShareText}>VIEW ON MAP</Text>
               </Pressable>
             </View>
 

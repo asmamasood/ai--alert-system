@@ -4,6 +4,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { useMapStore } from '../../src/store/useMapStore';
 import { useIncidentStore } from '../../src/store/useIncidentStore';
 import { DESIGN_TOKENS, SEVERITY_STYLE } from '../../src/constants/mapThemes';
 import { EMERGENCY_CATEGORIES } from '../../src/constants/emergencyTypes';
@@ -33,41 +35,59 @@ function EvacuateBanner() {
   );
 }
 
-function NearbyAlertItem({ incident }: { incident: Incident }) {
+const NearbyAlertItem = React.memo(function NearbyAlertItem({ incident, onPress }: { incident: Incident; onPress: () => void }) {
   const sev = SEVERITY_STYLE[incident.severity] || SEVERITY_STYLE.medium;
   const cat = EMERGENCY_CATEGORIES.find((c) => c.id === incident.type);
 
   return (
-    <View style={nb.item}>
-      <View style={[nb.iconBox, { backgroundColor: sev.badgeBg, borderColor: sev.border, overflow: 'hidden', position: 'relative' }]}>
-        {incident.media && incident.media.length > 0 && incident.media[0].uri ? (
-          <Image source={{ uri: incident.media[0].uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        ) : (
-          <Text style={nb.icon}>{cat?.icon ?? '⚠️'}</Text>
-        )}
-      </View>
-      <View style={nb.content}>
-        <Text style={nb.title}>{incident.title}</Text>
-        <Text style={nb.location}>
-          GPS: {incident.location.latitude.toFixed(3)}, {incident.location.longitude.toFixed(3)}
-        </Text>
-      </View>
-      <View style={nb.right}>
-        <View style={[nb.sev, { backgroundColor: sev.badgeBg, borderColor: sev.border, borderWidth: 1 }]}>
-          <Text style={[nb.sevText, { color: sev.text }]}>{sev.label.toUpperCase()}</Text>
+    <Pressable onPress={onPress} style={({ pressed }) => [pressed && { backgroundColor: 'rgba(255,255,255,0.04)' }]}>
+      <View style={nb.item}>
+        <View style={[nb.iconBox, { backgroundColor: sev.badgeBg, borderColor: sev.border, overflow: 'hidden', position: 'relative' }]}>
+          {incident.media && incident.media.length > 0 && incident.media[0].uri ? (
+            <Image source={{ uri: incident.media[0].uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ) : (
+            <Text style={nb.icon}>{cat?.icon ?? '⚠️'}</Text>
+          )}
         </View>
-        <Text style={nb.time}>{formatTimestamp(incident.timestamp)}</Text>
+        <View style={nb.content}>
+          <Text style={nb.title}>{incident.title}</Text>
+          <Text style={nb.location}>
+            GPS: {incident.location.latitude.toFixed(3)}, {incident.location.longitude.toFixed(3)}
+          </Text>
+        </View>
+        <View style={nb.right}>
+          <View style={[nb.sev, { backgroundColor: sev.badgeBg, borderColor: sev.border, borderWidth: 1 }]}>
+            <Text style={[nb.sevText, { color: sev.text }]}>{sev.label.toUpperCase()}</Text>
+          </View>
+          <Text style={nb.time}>{formatTimestamp(incident.timestamp)}</Text>
+        </View>
       </View>
-    </View>
+    </Pressable>
   );
-}
+});
 
 export default function AlertsScreen() {
-  const { incidents } = useIncidentStore();
+  const router = useRouter();
+  const { incidents, setSelectedIncident } = useIncidentStore();
   
   const sorted = [...incidents].sort(
     (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
   );
+
+  const handleAlertPress = (incident: Incident) => {
+    // Zoom/pan map to this incident's location
+    useMapStore.getState().setCameraPosition(
+      incident.location.latitude,
+      incident.location.longitude,
+      14.5
+    );
+    // Open sheet & highlight marker
+    useMapStore.getState().setSelectedIncident(incident);
+    setSelectedIncident(incident);
+    
+    // Switch to Home tab (the Map Screen)
+    router.replace('/(tabs)/home');
+  };
 
   return (
     <View style={styles.root}>
@@ -92,10 +112,15 @@ export default function AlertsScreen() {
               <Text style={styles.sectionLbl}>Live Tactical Alerts</Text>
             </View>
           )}
-          renderItem={({ item }) => <NearbyAlertItem incident={item} />}
+          renderItem={({ item }) => <NearbyAlertItem incident={item} onPress={() => handleAlertPress(item)} />}
           ItemSeparatorComponent={() => <View style={styles.sep} />}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          getItemLayout={(data, index) => ({ length: 69, offset: 69 * index, index })}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={true}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Text style={styles.emptyText}>No active alerts found</Text>

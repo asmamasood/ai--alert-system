@@ -63,6 +63,13 @@ class SocketService {
     });
   }
 
+  void subscribeToIncidents(Function(Map<String, dynamic>) handler) {
+    socket.on('incident-created', (data) {
+      dev.log('📸 Incident with image received: $data');
+      handler(Map<String, dynamic>.from(data));
+    });
+  }
+
   void subscribeToAgents() {
     dev.log('Subscribing to ai:agents');
     socket.emit('subscribe:agents');

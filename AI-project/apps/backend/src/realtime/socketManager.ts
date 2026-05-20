@@ -137,6 +137,11 @@ export function emitSafetyScoreUpdate(io: Server, scores: any[]) {
   io.emit('district-risk', scores);
 }
 
+export function emitIncidentImage(io: Server, incident: any) {
+  io.emit('incident-created', { ...incident, timestamp: new Date().toISOString() });
+  io.to('command:center').emit('incident-created:detailed', incident);
+}
+
 export function getConnectedCount(): number {
   return connectedUsers.size;
 }

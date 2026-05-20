@@ -125,6 +125,7 @@ model User {
   
   // Relations
   reports           EmergencyReport[]
+  incidents         Incident[]
   chatMessages      ChatMessage[]
   notifications     Notification[]
   auditLogs         AuditLog[]
@@ -433,6 +434,39 @@ model AgentExecution {
   createdAt         DateTime      @default(now())
   
   @@map("agent_executions")
+}
+
+model Incident {
+  id                String        @id @default(cuid())
+  reportNumber      String        @unique @default(cuid())
+  
+  // Core info
+  title             String
+  description       String
+  category          String        // FIRE, FLOOD, EARTHQUAKE, etc.
+  severity          SeverityLevel @default(HIGH)
+  
+  // Location
+  latitude          Float
+  longitude         Float
+  district          String?
+  address           String?
+  
+  // Media
+  imageUrl          String?       // Single image from incident
+  
+  // Reporter
+  reporterId        String?
+  reporter          User?         @relation(fields: [reporterId], references: [id])
+  
+  // Status
+  isResolved        Boolean       @default(false)
+  
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@map("incidents")
 }
 
 model AuditLog {

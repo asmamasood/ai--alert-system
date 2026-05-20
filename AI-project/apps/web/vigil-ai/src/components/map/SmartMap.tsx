@@ -251,6 +251,13 @@ export const SmartMap: React.FC = () => {
                       </View>
                     </View>
                     <Text style={styles.cardDesc} numberOfLines={2}>{incident.description}</Text>
+                    {incident.media && incident.media.length > 0 && incident.media[0].uri && (
+                      <Image
+                        source={{ uri: incident.media[0].uri }}
+                        style={{ width: '100%', height: 110, borderRadius: 8, marginTop: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}
+                        resizeMode="cover"
+                      />
+                    )}
                     <View style={styles.cardFooter}>
                       <Text style={styles.cardTime}>Live GPS: {incident.location.latitude.toFixed(4)}, {incident.location.longitude.toFixed(4)}</Text>
                       <Text style={styles.cardAction}>FLY TO MAP 🛰️</Text>

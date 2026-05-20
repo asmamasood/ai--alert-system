@@ -99,20 +99,47 @@ export const ReportForm: React.FC<ReportFormProps> = ({ onClose, onSuccess }) =>
 
     setIsSubmitting(true);
     try {
+      let uploadFailed = false;
+      const finalMedia = await Promise.all(
+        media.map(async (m) => {
+          if (m.uploadedUrl) return m;
+          try {
+            const url = await mediaService.uploadImage(m.uri, `temp_${Date.now()}`);
+            return { ...m, uploadedUrl: url };
+          } catch (err) {
+            console.warn('Fallback media upload failed', err);
+            uploadFailed = true;
+            return m;
+          }
+        })
+      );
+      
+      if (uploadFailed) {
+        Alert.alert('Upload Failed', 'Could not upload media to the server. Please check your connection and try again.');
+        setIsSubmitting(false);
+        return;
+      }
+      setMedia(finalMedia);
+
       const lat = location.latitude;
       const lng = location.longitude;
       const district = 'Saddar';
+      
+      let reportId = `incident_${Date.now()}`;
 
       try {
-        await incidentApi.submitReport({
+        const res = await incidentApi.submitReport({
           description,
           type: selectedType.toUpperCase(),
           latitude: lat,
           longitude: lng,
           district,
-          mediaUrls: media.map((m) => m.uploadedUrl || m.uri).filter(Boolean),
+          mediaUrls: finalMedia.map((m) => m.uploadedUrl || m.uri).filter(Boolean),
           isAnonymous: !user?.id,
         });
+        if (res.data?.data?.reportId) {
+          reportId = res.data.data.reportId;
+        }
       } catch (apiErr: any) {
         console.warn('[ReportForm] Backend submit failed, saving locally:', apiErr.message);
       }
@@ -120,7 +147,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({ onClose, onSuccess }) =>
       const aiData = analysis ?? { type: selectedType, severity: 'medium', confidence: 70 };
 
       const incident: Incident = {
-        id: `incident_${Date.now()}`,
+        id: reportId,
         type: (aiData.type as IncidentType) ?? selectedType,
         title: `${EMERGENCY_CATEGORIES.find((c) => c.id === selectedType)?.label} — Tactical Incident`,
         description,
@@ -129,7 +156,7 @@ export const ReportForm: React.FC<ReportFormProps> = ({ onClose, onSuccess }) =>
         status: 'active',
         confidence: aiData.confidence ?? 70,
         aiAnalysis: analysis ?? undefined,
-        media,
+        media: finalMedia,
         reportedBy: user?.id ?? 'anonymous',
         timestamp: new Date(),
         updatedAt: new Date(),

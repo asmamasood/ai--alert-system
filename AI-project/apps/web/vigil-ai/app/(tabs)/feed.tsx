@@ -25,7 +25,7 @@ const PLACEHOLDER_COLORS: Record<string, string> = {
   chemical: '#76FF03',
 };
 
-function FeedCard({ incident, onPress }: { incident: Incident; onPress: () => void }) {
+const FeedCard = React.memo(function FeedCard({ incident, onPress }: { incident: Incident; onPress: () => void }) {
   const sev = SEVERITY_STYLE[incident.severity];
   const cat = EMERGENCY_CATEGORIES.find((c) => c.id === incident.type);
 
@@ -63,7 +63,7 @@ function FeedCard({ incident, onPress }: { incident: Incident; onPress: () => vo
       </View>
     </Pressable>
   );
-}
+});
 
 export default function FeedScreen() {
   const { incidents, selectedIncident, setSelectedIncident } = useIncidentStore();
@@ -92,6 +92,11 @@ export default function FeedScreen() {
           )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          getItemLayout={(data, index) => ({ length: 97, offset: 97 * index, index })}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews={true}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={
             <View style={styles.empty}>

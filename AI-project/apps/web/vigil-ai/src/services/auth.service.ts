@@ -5,6 +5,7 @@
 
 import { authApi } from './api';
 import { useUserStore } from '../store/useUserStore';
+import { UserRole } from '../types/user.types';
 
 export const authService = {
   /**
@@ -20,7 +21,7 @@ export const authService = {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role?.toLowerCase() || 'citizen',
+        role: (user.role?.toLowerCase() || 'citizen') as UserRole,
         stats: { totalReports: 0, verifiedReports: 0, savedLives: 0, trustScore: 80 },
         badges: [],
         isAnonymous: false,
@@ -34,7 +35,8 @@ export const authService = {
     // Store refresh token for later
     if (refreshToken) {
       try {
-        const { AsyncStorage } = await import('@react-native-async-storage/async-storage');
+        const AsyncStorageModule = await import('@react-native-async-storage/async-storage');
+        const AsyncStorage = AsyncStorageModule.default;
         await AsyncStorage.setItem('refresh_token', refreshToken);
       } catch {
         // AsyncStorage may not be available in all targets
@@ -56,7 +58,7 @@ export const authService = {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: 'citizen',
+        role: 'citizen' as UserRole,
         stats: { totalReports: 0, verifiedReports: 0, savedLives: 0, trustScore: 80 },
         badges: [],
         isAnonymous: false,
@@ -78,9 +80,9 @@ export const authService = {
       id: `USR-${Date.now()}`,
       name: name || 'Waiz Hussain',
       email: email || 'waiz@gmail.com',
-      role: 'citizen',
+      role: 'citizen' as UserRole,
       stats: { totalReports: 1, verifiedReports: 1, savedLives: 4, trustScore: 95 },
-      badges: ['First Responder'],
+      badges: [],
       isAnonymous: false,
       createdAt: new Date(),
     };
@@ -104,9 +106,9 @@ export const authService = {
       id: 'USR-001',
       name: 'Waiz Hussain',
       email: 'waiz@gmail.com',
-      role: 'super_admin',
+      role: 'admin' as UserRole,
       stats: { totalReports: 24, verifiedReports: 18, savedLives: 156, trustScore: 98 },
-      badges: ['Crisis Commander', 'AI Pioneer'],
+      badges: [],
       isAnonymous: false,
       createdAt: new Date(),
     };

@@ -12,8 +12,8 @@ export const locationService = {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        console.warn('[Location] Permission denied — using fallback pin');
-        return FALLBACK_LOCATION;
+        console.warn('[Location] Permission denied');
+        throw new Error('Permission denied');
       }
 
       const location = await Location.getCurrentPositionAsync({

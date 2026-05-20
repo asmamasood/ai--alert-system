@@ -36,6 +36,7 @@ export const DESIGN_TOKENS = {
     // Severity
     neonRed: '#FF1744',
     neonRedDim: 'rgba(255, 23, 68, 0.15)',
+    neonYellow: '#FFEA00',
     neonOrange: '#FF6D00',
     neonOrangeDim: 'rgba(255, 109, 0, 0.15)',
     neonAmber: '#FFAB00',

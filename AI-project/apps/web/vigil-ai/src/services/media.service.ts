@@ -92,6 +92,7 @@ export const mediaService = {
         });
         const resJson = await response.json();
         if (resJson.success && resJson.url) return resJson.url;
+        throw new Error(resJson.message || 'Upload failed on server');
       } else {
         const formData = new FormData();
         const response = await fetch(uri);
@@ -120,11 +121,13 @@ export const mediaService = {
         if (resJson.success && resJson.url) {
           return resJson.url;
         }
+        throw new Error(resJson.message || 'Upload failed on server');
       }
     } catch (err: any) {
-      console.warn('[Media] Image upload failed, falling back to local URI:', err.message);
+      console.warn('[Media] Image upload failed:', err.message);
+      if (ENV.IS_DEV) return uri; // Fallback for pure offline testing
+      throw new Error(err.message || 'Network error during upload');
     }
-    return uri; // Fallback
   },
 
   uploadVideo: async (uri: string, incidentId: string): Promise<string> => {

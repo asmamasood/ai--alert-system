@@ -8,7 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import { validate } from '../middleware/validate';
 import { authenticate } from '../middleware/auth';
 import { analyzeEmergency } from '../services/aiAnalysis.service';
-import { emitIncidentUpdate, emitEmergencyAlert } from '../realtime/socketManager';
+import { emitIncidentUpdate, emitEmergencyAlert, emitIncidentImage } from '../realtime/socketManager';
 import { io } from '../server';
 import { logger } from '../utils/logger';
 import { getMockIncidents } from '../data/mockData';
@@ -227,6 +227,54 @@ router.get('/stats', async (req: Request, res: Response) => {
       ],
     },
   });
+});
+
+// ── POST /incidents/report — Create incident report with image ───────────────
+router.post('/report', async (req: Request, res: Response) => {
+  try {
+    const { title, description, imageUrl, category, severity, latitude, longitude, district, reporterId } = req.body;
+
+    if (!title || !description || latitude === undefined || longitude === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: title, description, latitude, longitude'
+      });
+    }
+
+    const incident = {
+      id: `INC-${Date.now()}`,
+      title,
+      description,
+      imageUrl,
+      category: category || 'UNKNOWN',
+      severity: severity || 'HIGH',
+      latitude: parseFloat(latitude),
+      longitude: parseFloat(longitude),
+      district: district || 'Karachi',
+      createdAt: new Date().toISOString(),
+      reporterId: reporterId || 'unknown',
+      isResolved: false,
+    };
+
+    // Save to store
+    store.addIncident(incident);
+
+    // Emit realtime update to all connected clients
+    emitIncidentImage(io, incident);
+
+    logger.info(`📸 Incident created: ${incident.id}`);
+
+    res.json({
+      success: true,
+      data: {
+        incidentId: incident.id,
+        ...incident,
+      }
+    });
+  } catch (err) {
+    logger.error('Error creating incident:', err);
+    res.status(500).json({ success: false, message: 'Failed to create incident' });
+  }
 });
 
 export default router;
